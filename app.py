@@ -1,72 +1,35 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+from sklearn.cluster import KMeans
 
-# Page title
-st.title("Sales & Revenue Analysis Dashboard")
+st.title("Customer Segmentation Dashboard")
 
-# Load data
-df = pd.read_csv("sales_data.csv")
+df = pd.read_csv("customers.csv")
 
-# KPIs
-total_revenue = df["Revenue"].sum()
-total_quantity = df["Quantity"].sum()
-total_orders = len(df)
+X = df[["AnnualIncome", "SpendingScore"]]
 
-col1, col2, col3 = st.columns(3)
+kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+df["Cluster"] = kmeans.fit_predict(X)
 
-col1.metric("Total Revenue", f"₹{total_revenue}")
-col2.metric("Total Quantity", total_quantity)
-col3.metric("Total Orders", total_orders)
+st.subheader("Customer Dataset")
+st.dataframe(df)
 
-st.divider()
+st.subheader("Customer Segments")
 
-# Revenue Trend
-st.subheader("Revenue Trend")
-
-trend = df.groupby("Date")["Revenue"].sum().reset_index()
-
-fig1 = px.line(
-    trend,
-    x="Date",
-    y="Revenue",
-    title="Revenue Trend"
-)
-
-st.plotly_chart(fig1)
-
-# Revenue by Product
-st.subheader("Revenue by Product")
-
-fig2 = px.bar(
-    df.groupby("Product")["Revenue"].sum().reset_index(),
-    x="Product",
-    y="Revenue",
-    title="Revenue by Product"
-)
-
-st.plotly_chart(fig2)
-
-# Revenue by Region
-st.subheader("Revenue by Region")
-
-fig3 = px.pie(
+fig = px.scatter(
     df,
-    names="Region",
-    values="Revenue",
-    title="Revenue by Region"
+    x="AnnualIncome",
+    y="SpendingScore",
+    color="Cluster",
+    hover_data=["CustomerID","Age","Gender"]
 )
 
-st.plotly_chart(fig3)
+st.plotly_chart(fig)
 
-# Revenue by Category
-st.subheader("Revenue by Category")
+st.subheader("Cluster Summary")
 
-fig4 = px.bar(
-    df.groupby("Category")["Revenue"].sum().reset_index(),
-    x="Category",
-    y="Revenue",
-    title="Revenue by Category"
-)
+summary = df.groupby("Cluster")[["AnnualIncome","SpendingScore"]].mean()
+st.dataframe(summary)
 
-st.plotly_chart(fig4)
+st.success("Customer segmentation completed using K-Means Clustering")
